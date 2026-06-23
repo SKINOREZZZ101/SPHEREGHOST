@@ -83,4 +83,12 @@ export class SystemController {
     const res = await this.rw.get<any>(creds, '/system/tools/x25519/generate');
     return { privateKey: res?.privateKey ?? '', publicKey: res?.publicKey ?? '' };
   }
+
+  // The real node SECRET_KEY (encoded cert payload) from the engine keygen.
+  @Get('keygen')
+  async keygen(@Headers() headers: IncomingHttpHeaders) {
+    const creds = panelFromHeaders(headers);
+    const res = await this.rw.get<any>(creds, '/keygen');
+    return { secretKey: res?.pubKey ?? '' };
+  }
 }

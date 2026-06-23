@@ -480,15 +480,14 @@ function InstallWizard({ opened, onClose }: { opened: boolean; onClose: () => vo
 
   useEffect(() => {
     if (opened && !secret) {
-      SphereApi.generateX25519().then((k) =>
-        setSecret(btoa(JSON.stringify({ nodeCert: k.publicKey, key: k.privateKey, t: Date.now() })).slice(0, 220)),
-      );
+      SphereApi.keygen()
+        .then((k) => setSecret(k.secretKey || ''))
+        .catch(() => setSecret(''));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opened]);
 
-  const command =
-    'SECRET_KEY="<вставьте из поля ниже>" bash <(curl -Ls https://raw.githubusercontent.com/SKINOREZZZ101/SPHEREGHOST/main/scripts/install-node.sh)';
+  const command = `SECRET_KEY="${secret || '<SECRET_KEY ниже>'}" bash <(curl -Ls https://raw.githubusercontent.com/SKINOREZZZ101/SPHEREGHOST/main/scripts/install-node.sh)`;
 
   const steps = [
     t('nodes.installStep1'),

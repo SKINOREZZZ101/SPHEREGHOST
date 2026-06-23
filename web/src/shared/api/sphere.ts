@@ -282,6 +282,10 @@ export const SphereApi = {
       }),
       async () => (await http.get<{ privateKey: string; publicKey: string }>('/system/tools/x25519')).data,
     ),
+  keygen: () =>
+    isDemo()
+      ? Promise.resolve({ secretKey: `eyJub2RlQ2VydCI6${randB64(180)}` })
+      : http.get<{ secretKey: string }>('/system/keygen').then((r) => r.data),
   createToken: (name: string) =>
     mutate(
       () => {
