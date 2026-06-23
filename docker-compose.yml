@@ -1,36 +1,141 @@
-# Ghost Sphere — one-command install.
-#   docker compose up -d
-# Then open http://localhost:8080 and connect your Remnawave panel
-# (or click "Enter demo mode" to explore on demo data).
+# Ghost Sphere — self-contained VPN control plane (full fork of the Remnawave engine).
+#   docker compose up -d --build
+# Then open http://localhost:8080, create the first admin and you're live.
+# Everything is yours: database, engine, panel, nodes. Developed by Ghost OS.
 #
-# Developed by Ghost OS.
+# IMPORTANT for production: change JWT_AUTH_SECRET / JWT_API_TOKENS_SECRET and
+# the Postgres password below.
+
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: 50m
+      max-file: 5
 
 services:
+  # ----- PostgreSQL (engine database) -----
+  db:
+    image: postgres:17.6
+    container_name: ghost-sphere-db
+    restart: unless-stopped
+    <<: *logging
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ghost}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ghost_sphere_pg}
+      POSTGRES_DB: ${POSTGRES_DB:-ghostsphere}
+      TZ: UTC
+    volumes:
+      - gs-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 10s
+      retries: 5
+    networks: [sphere]
+
+  # ----- Redis / Valkey (queues + cache) -----
+  redis:
+    image: valkey/valkey:8-alpine
+    container_name: ghost-sphere-redis
+    restart: unless-stopped
+    <<: *logging
+    command: >
+      valkey-server
+      --save ""
+      --appendonly no
+      --maxmemory-policy noeviction
+      --loglevel warning
+    healthcheck:
+      test: ['CMD', 'valkey-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks: [sphere]
+
+  # ----- Ghost Sphere Engine (forked Remnawave backend: api + scheduler + jobs) -----
+  backend:
+    build:
+      context: ./backend
+    image: ghost-sphere-backend:0.0.1
+    container_name: ghost-sphere-backend
+    hostname: ghost-sphere-backend
+    restart: unless-stopped
+    <<: *logging
+    environment:
+      APP_PORT: 3000
+      METRICS_PORT: 3001
+      API_INSTANCES: 1
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ghost}:${POSTGRES_PASSWORD:-ghost_sphere_pg}@db:5432/${POSTGRES_DB:-ghostsphere}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_AUTH_SECRET: ${JWT_AUTH_SECRET:-ghost_sphere_auth_secret_0001_change_in_prod}
+      JWT_API_TOKENS_SECRET: ${JWT_API_TOKENS_SECRET:-ghost_sphere_api_secret_0001_change_in_prod}
+      FRONT_END_DOMAIN: '*'
+      PANEL_DOMAIN: ${PANEL_DOMAIN:-localhost}
+      SUB_PUBLIC_DOMAIN: ${SUB_PUBLIC_DOMAIN:-localhost:8080/api/sub}
+      DISABLE_FRONTEND: 'true'
+      IS_DOCS_ENABLED: 'false'
+      SWAGGER_PATH: /docs
+      SCALAR_PATH: /scalar
+      METRICS_USER: ${METRICS_USER:-admin}
+      METRICS_PASS: ${METRICS_PASS:-admin}
+      IS_TELEGRAM_NOTIFICATIONS_ENABLED: 'false'
+      WEBHOOK_ENABLED: 'false'
+      BANDWIDTH_USAGE_NOTIFICATIONS_ENABLED: 'false'
+      NOT_CONNECTED_USERS_NOTIFICATIONS_ENABLED: 'false'
+    expose:
+      - '3000'
+      - '3001'
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fsS http://localhost:3001/health || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [sphere]
+
+  # ----- Ghost Sphere BFF (premium API layer for the web, talks to the local engine) -----
   api:
     build:
       context: ./api
-    container_name: ghost-sphere-core
+    image: ghost-sphere-bff:0.0.1
+    container_name: ghost-sphere-api
     restart: unless-stopped
+    <<: *logging
     environment:
       PORT: 8088
-      NODE_ENV: production
+      ENGINE_URL: http://backend:3000
     expose:
       - '8088'
-    networks:
-      - sphere
+    depends_on:
+      - backend
+    networks: [sphere]
 
+  # ----- Ghost Sphere Web (premium UI; nginx serves SPA + proxies /api -> bff) -----
   web:
     build:
       context: ./web
+    image: ghost-sphere-web:0.0.1
     container_name: ghost-sphere-web
     restart: unless-stopped
-    depends_on:
-      - api
+    <<: *logging
     ports:
       - '${GHOST_SPHERE_PORT:-8080}:80'
-    networks:
-      - sphere
+    depends_on:
+      - api
+    networks: [sphere]
 
 networks:
   sphere:
+    name: ghost-sphere
     driver: bridge
+
+volumes:
+  gs-db-data:
+    name: ghost-sphere-db-data

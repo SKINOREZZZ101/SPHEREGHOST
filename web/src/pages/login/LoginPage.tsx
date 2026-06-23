@@ -3,11 +3,11 @@ import {
   ActionIcon,
   Box,
   Button,
-  Checkbox,
   Divider,
   Group,
   Menu,
   PasswordInput,
+  SegmentedControl,
   Stack,
   Text,
   TextInput,
@@ -22,6 +22,7 @@ import {
   IconLock,
   IconServerBolt,
   IconShieldLock,
+  IconUser,
   IconWorldBolt,
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
@@ -29,6 +30,7 @@ import { GhostSphereMark, Logo } from '@shared/ui/Logo';
 import { useSession } from '@entities/session/session.store';
 import i18n, { SUPPORTED_LANGUAGES } from '@shared/i18n/i18n';
 import { APP } from '@shared/config';
+import { login as apiLogin, register as apiRegister } from '@shared/api/auth';
 
 const features = [
   { icon: IconServerBolt, key: 'nav.nodes', accent: '#22d3ee' },
@@ -42,35 +44,31 @@ export default function LoginPage() {
   const loginDemo = useSession((s) => s.loginDemo);
   const loginLive = useSession((s) => s.loginLive);
 
-  const [url, setUrl] = useState('');
-  const [token, setToken] = useState('');
-  const [caddy, setCaddy] = useState('');
-  const [remember, setRemember] = useState(true);
+  const [tab, setTab] = useState<'login' | 'register'>('login');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canConnect = url.trim().length > 4 && token.trim().length > 4;
+  const canSubmit = username.trim().length >= 2 && password.length >= 4;
 
-  const handleConnect = async () => {
-    if (!canConnect) return;
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
     setBusy(true);
     setError(null);
     try {
-      loginLive({
-        name: new URL(url.startsWith('http') ? url : `https://${url}`).hostname,
-        url: url.startsWith('http') ? url : `https://${url}`,
-        token: token.trim(),
-        caddyToken: caddy.trim() || undefined,
-      });
+      const fn = tab === 'register' ? apiRegister : apiLogin;
+      const res = await fn(username.trim(), password);
+      if (!res?.accessToken) throw new Error('no token');
+      loginLive({ name: username.trim(), token: res.accessToken });
     } catch {
-      setError(t('auth.invalidToken'));
+      setError(t('auth.loginFailed'));
       setBusy(false);
     }
   };
 
   return (
     <Box style={{ minHeight: '100vh', display: 'flex', position: 'relative' }}>
-      {/* Language switcher */}
       <Box style={{ position: 'absolute', top: 20, right: 20, zIndex: 5 }}>
         <Menu shadow="lg" width={160} position="bottom-end" radius="md">
           <Menu.Target>
@@ -107,7 +105,6 @@ export default function LoginPage() {
         }}
       >
         <Logo size={40} />
-
         <Stack gap="xl" maw={520}>
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -180,15 +177,8 @@ export default function LoginPage() {
         </Text>
       </Box>
 
-      {/* Right: connect form */}
-      <Box
-        style={{
-          flex: 1,
-          display: 'grid',
-          placeItems: 'center',
-          padding: 24,
-        }}
-      >
+      {/* Right: login / register */}
+      <Box style={{ flex: 1, display: 'grid', placeItems: 'center', padding: 24 }}>
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
@@ -201,46 +191,50 @@ export default function LoginPage() {
 
           <Box className="gs-glass gs-glow-ghost" style={{ borderRadius: 22, padding: 30 }}>
             <Stack gap="xs" mb="lg">
-              <Title order={2}>{t('auth.title')}</Title>
+              <Title order={2}>{t('auth.welcome')}</Title>
               <Text c="dimmed" fz="sm">
-                {t('auth.subtitle')}
+                {t('auth.panelSubtitle')}
               </Text>
             </Stack>
 
+            <SegmentedControl
+              fullWidth
+              value={tab}
+              onChange={(v) => {
+                setTab(v as 'login' | 'register');
+                setError(null);
+              }}
+              data={[
+                { value: 'login', label: t('auth.loginTab') },
+                { value: 'register', label: t('auth.registerTab') },
+              ]}
+              mb="md"
+            />
+
             <Stack gap="md">
               <TextInput
-                label={t('auth.panelUrl')}
-                placeholder={t('auth.panelUrlPlaceholder')}
-                value={url}
-                onChange={(e) => setUrl(e.currentTarget.value)}
-                leftSection={<IconWorldBolt size={16} />}
+                label={t('auth.usernameField')}
+                value={username}
+                onChange={(e) => setUsername(e.currentTarget.value)}
+                leftSection={<IconUser size={16} />}
                 size="md"
+                autoComplete="username"
               />
               <PasswordInput
-                label={t('auth.apiToken')}
-                placeholder={t('auth.apiTokenPlaceholder')}
-                description={t('auth.apiTokenHint')}
-                value={token}
-                onChange={(e) => setToken(e.currentTarget.value)}
+                label={t('auth.passwordField')}
+                value={password}
+                onChange={(e) => setPassword(e.currentTarget.value)}
                 leftSection={<IconLock size={16} />}
                 size="md"
-              />
-              <TextInput
-                label={t('auth.caddyToken')}
-                placeholder={t('auth.caddyTokenPlaceholder')}
-                value={caddy}
-                onChange={(e) => setCaddy(e.currentTarget.value)}
-                size="md"
+                autoComplete={tab === 'register' ? 'new-password' : 'current-password'}
+                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
               />
 
-              <Group justify="space-between">
-                <Checkbox
-                  label={t('auth.rememberSession')}
-                  checked={remember}
-                  onChange={(e) => setRemember(e.currentTarget.checked)}
-                  size="sm"
-                />
-              </Group>
+              {tab === 'register' && (
+                <Text fz="xs" c="dimmed">
+                  {t('auth.firstAdminHint')}
+                </Text>
+              )}
 
               {error && (
                 <Text c="red.4" fz="sm">
@@ -252,13 +246,17 @@ export default function LoginPage() {
                 size="md"
                 fullWidth
                 loading={busy}
-                disabled={!canConnect}
-                onClick={handleConnect}
+                disabled={!canSubmit}
+                onClick={handleSubmit}
                 rightSection={<IconArrowRight size={18} />}
                 variant="gradient"
                 gradient={{ from: 'ghost.6', to: 'spectre.5', deg: 135 }}
               >
-                {busy ? t('auth.connecting') : t('auth.connect')}
+                {busy
+                  ? t('auth.connecting')
+                  : tab === 'register'
+                    ? t('auth.registerBtn')
+                    : t('auth.signInBtn')}
               </Button>
 
               <Divider label={t('common.or')} labelPosition="center" my={2} />

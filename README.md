@@ -47,53 +47,55 @@ cd SPHERE-GHOST
 docker compose up -d --build
 ```
 
-Откройте **http://localhost:8080**, введите адрес панели Remnawave и API-токен — или нажмите **«Войти в демо-режиме»**, чтобы изучить всё на демо-данных.
+Откройте **http://localhost:8080**, на вкладке **«Регистрация»** создайте первого администратора (или нажмите **«Войти в демо-режиме»**, чтобы изучить всё на демо-данных). Поднимется весь стек: PostgreSQL + Redis + наш движок + BFF + интерфейс.
 
 > Порт настраивается переменной `GHOST_SPHERE_PORT` (по умолчанию `8080`).
+> Для продакшена смените `JWT_AUTH_SECRET`, `JWT_API_TOKENS_SECRET` и пароль Postgres.
 
 ### Вариант 2 — Локальная разработка
 
 ```bash
-# Установка зависимостей
-npm run install:all
+# 1) Поднимите базу и Redis для движка
+docker compose up -d db redis
 
-# Терминал 1 — ядро (NestJS gateway)
+# 2) Движок (форк Remnawave): миграции + сервер
+cd backend && npm install && npm run migrate:generate && npm run migrate:deploy && npm run start:prod
+
+# 3) BFF + интерфейс
 npm run dev:api      # http://127.0.0.1:8088
-
-# Терминал 2 — интерфейс (Vite + React)
 npm run dev:web      # http://127.0.0.1:4173
 ```
 
-Vite проксирует `/api` на Ghost Sphere Core автоматически.
-
-## 🧠 Архитектура
+## 🧠 Архитектура (самодостаточная — всё наше)
 
 ```mermaid
 flowchart LR
     User([Оператор]) -->|браузер| Web[Ghost Sphere Web\nReact · Mantine · FSD]
-    Web -->|"/api (X-GS-Panel-*)"| Core[Ghost Sphere Core\nNestJS gateway]
-    Core -->|Bearer API token| Panel[(Remnawave Panel API)]
-    Panel <-->|mTLS · :2222| Nodes[(VPN-ноды · Xray)]
-    Core -. native .-> Reg[Интеграции · Бэкапы · Каталог]
+    Web -->|"/api · Bearer JWT"| BFF[Ghost Sphere BFF\nNestJS]
+    BFF -->|локально| Engine[Ghost Sphere Engine\nфорк Remnawave · NestJS + Prisma]
+    Engine <--> DB[(PostgreSQL)]
+    Engine <--> Redis[(Redis / Valkey)]
+    Engine <-->|mTLS · :2222| Nodes[(Ghost Sphere Nodes · Xray)]
 ```
 
 - **Ghost Sphere Web** — премиальный SPA (React 19, Vite, Mantine 8, TanStack Query, Zustand, i18next, Framer Motion, Monaco). Работает автономно в демо-режиме.
-- **Ghost Sphere Core** — stateless-шлюз на NestJS. Учётные данные панели передаются заголовками `X-GS-Panel-*`, поэтому одно ядро обслуживает несколько панелей.
-- **Remnawave Panel** — источник истины: ноды, конфиги, пользователи, подписки.
+- **Ghost Sphere BFF** — слой API на NestJS, отдаёт интерфейсу удобные DTO и проксирует логин к движку.
+- **Ghost Sphere Engine** — **полноценный форк backend Remnawave** (NestJS + Prisma + PostgreSQL + Redis + BullMQ): пользователи, подписки, ноды, конфиги Xray, mTLS-связь с нодами. Это **наша** панель, никакой внешней Remnawave.
+- **Ghost Sphere Nodes** — форк node Remnawave (Xray-агент), ставится на VPN-серверы.
 
 ### Структура репозитория
 
 ```
 SPHERE-GHOST/
-├── web/                 # Интерфейс (React + Vite + Mantine)
-│   ├── src/app/         # Оболочка: layout, роутинг, командная палитра
-│   ├── src/pages/       # 15 страниц
-│   ├── src/shared/      # Тема Ghost OS, i18n RU/EN, API-клиент, UI-кит
-│   └── src/entities/    # Zustand-сторы (сессия, настройки)
-├── api/                 # Ghost Sphere Core (NestJS gateway)
-│   └── src/modules/     # system · nodes · catalog · users · native
+├── web/                 # Интерфейс (React + Vite + Mantine, наш дизайн)
+├── api/                 # Ghost Sphere BFF (NestJS) — API-слой для интерфейса
+├── backend/             # Ghost Sphere Engine — форк backend Remnawave (движок панели)
+│   ├── src/modules/     # users · nodes · hosts · config-profiles · subscription · ...
+│   └── prisma/          # схема БД (PostgreSQL)
+├── node/                # Ghost Sphere Node — форк node Remnawave (агент на серверах)
 ├── scripts/             # install-node.sh
-└── docker-compose.yml   # установка одной командой
+├── docs/                # руководства RU/EN + скриншоты
+└── docker-compose.yml   # postgres + redis + engine + bff + web — одна команда
 ```
 
 ## 🔗 Интеграция с экосистемой
@@ -118,22 +120,25 @@ Ghost Sphere спроектирован как «крыша» над всем ф
 
 ## 🇬🇧 English
 
-**Ghost Sphere** is the control center that unifies the entire Remnawave ecosystem in one dark, technological, fast interface — nodes, Xray configs, users, subscriptions, keys, bots, backups and a template library, all in a single sphere. Install and use.
+**Ghost Sphere** is a **self-contained fork of the Remnawave engine** — your own panel, your own database, your own nodes — wrapped in one dark, technological, premium interface. Nodes, Xray configs, users, subscriptions, keys, bots, backups and a template library, all in a single sphere. Install and use.
 
 ### Quick start
 
 ```bash
 cd SPHERE-GHOST
 docker compose up -d --build
-# open http://localhost:8080 → connect your panel or click "Enter demo mode"
+# open http://localhost:8080 → create the first admin (Register tab) or click "Enter demo mode"
 ```
+
+This brings up the full stack: **PostgreSQL + Redis + Ghost Sphere Engine + BFF + Web**. For production, change `JWT_AUTH_SECRET`, `JWT_API_TOKENS_SECRET` and the Postgres password.
 
 Local development:
 
 ```bash
-npm run install:all
-npm run dev:api    # NestJS gateway → http://127.0.0.1:8088
-npm run dev:web    # Vite + React  → http://127.0.0.1:4173
+docker compose up -d db redis          # database + redis for the engine
+cd backend && npm install && npm run migrate:generate && npm run migrate:deploy && npm run start:prod
+npm run dev:api    # BFF  → http://127.0.0.1:8088
+npm run dev:web    # Web  → http://127.0.0.1:4173
 ```
 
 ### Highlights
@@ -141,11 +146,11 @@ npm run dev:web    # Vite + React  → http://127.0.0.1:4173
 - Premium dark **Ghost OS** theme — spectral glow, glass surfaces, restrained motion
 - Command palette (`Ctrl + K`), full **RU / EN** localization, out-of-the-box demo mode
 - Nodes, Xray config editor (Monaco + schema validation), users & keys, subscriptions, squads, integrations, backups, template storage
-- Stateless NestJS gateway that proxies to any Remnawave panel via forwarded credentials
+- **Self-contained engine** — a full Remnawave fork with its own PostgreSQL, Redis, Prisma, BullMQ and mTLS node control. No external panel.
 
 ### Tech stack
 
-`React 19` · `Vite` · `Mantine 8` · `TanStack Query` · `Zustand` · `i18next` · `Framer Motion` · `Monaco` · `NestJS 11` · `Docker`
+`React 19` · `Vite` · `Mantine 8` · `TanStack Query` · `Zustand` · `i18next` · `Framer Motion` · `Monaco` · `NestJS 11` · `Prisma` · `PostgreSQL` · `Redis` · `Docker`
 
 ---
 

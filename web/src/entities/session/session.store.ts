@@ -18,7 +18,7 @@ interface SessionState {
   connection: PanelConnection | null;
   hydrated: boolean;
   loginDemo: () => void;
-  loginLive: (conn: Omit<PanelConnection, 'id'>) => void;
+  loginLive: (conn: { name: string; token: string; url?: string; caddyToken?: string }) => void;
   logout: () => void;
   setHydrated: () => void;
 }
@@ -45,7 +45,13 @@ export const useSession = create<SessionState>()(
         set({
           mode: 'live',
           authenticated: true,
-          connection: { ...conn, id: crypto.randomUUID() },
+          connection: {
+            id: crypto.randomUUID(),
+            name: conn.name,
+            url: conn.url || 'engine://local',
+            token: conn.token,
+            caddyToken: conn.caddyToken,
+          },
         }),
       logout: () => set({ mode: null, authenticated: false, connection: null }),
       setHydrated: () => set({ hydrated: true }),

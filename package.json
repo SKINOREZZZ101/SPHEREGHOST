@@ -8,10 +8,13 @@
   "scripts": {
     "dev:web": "npm --prefix web run dev",
     "dev:api": "npm --prefix api run start:dev",
+    "dev:backend": "npm --prefix backend run start:prod",
     "build:web": "npm --prefix web run build",
     "build:api": "npm --prefix api run build",
-    "build": "npm run build:api && npm run build:web",
-    "install:all": "npm --prefix web install && npm --prefix api install",
+    "build:backend": "npm --prefix backend run migrate:generate && npm --prefix backend run build",
+    "build": "npm run build:backend && npm run build:api && npm run build:web",
+    "install:all": "npm --prefix web install && npm --prefix api install && npm --prefix backend install",
+    "infra:up": "docker compose up -d db redis",
     "up": "docker compose up -d --build",
     "down": "docker compose down"
   },

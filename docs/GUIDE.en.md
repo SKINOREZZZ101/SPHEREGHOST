@@ -60,26 +60,28 @@ It is designed to be far more convenient, professional and technological than ex
 
 ## 2. Architecture
 
+Ghost Sphere is a **self-contained fork of the Remnawave engine**. No external panel: the database, engine, panel and nodes are all yours.
+
 ```
-┌──────────────┐   /api (X-GS-Panel-*  ┌─────────────────────┐   Bearer token   ┌──────────────────┐
-│ Ghost Sphere │   headers)            │  Ghost Sphere Core  │ ───────────────► │  Remnawave Panel │
-│     Web      │ ─────────────────────►│   (NestJS gateway)  │                  │       API        │
-│ React+Mantine│ ◄──────────────────── │   stateless         │ ◄─────────────── │                  │
-└──────────────┘                       └─────────────────────┘                  └────────┬─────────┘
-                                                                                          │ mTLS :2222
-                                                                                 ┌────────▼─────────┐
-                                                                                 │  VPN nodes (Xray)│
-                                                                                 └──────────────────┘
+┌──────────────┐  /api ·   ┌──────────────┐  local     ┌────────────────────┐   mTLS :2222   ┌────────────────┐
+│ Ghost Sphere │  Bearer   │ Ghost Sphere │ ─────────► │ Ghost Sphere Engine│ ─────────────► │ Ghost Sphere   │
+│     Web      │ ────────► │     BFF      │            │  (fork of RW backend) │              │ Nodes (Xray)   │
+│ React+Mantine│ ◄──────── │  (NestJS)    │ ◄───────── │ NestJS + Prisma    │ ◄───────────── │                │
+└──────────────┘           └──────────────┘            └─────┬───────┬──────┘                └────────────────┘
+                                                             │       │
+                                                   ┌─────────▼─┐ ┌───▼─────────┐
+                                                   │ PostgreSQL│ │ Redis/Valkey│
+                                                   └───────────┘ └─────────────┘
 ```
 
 | Component | What it is | Tech |
 | --- | --- | --- |
-| **Ghost Sphere Web** | The panel UI (SPA) | React 19, Vite, Mantine 8, TanStack Query, Zustand, i18next, Framer Motion, Monaco |
-| **Ghost Sphere Core** | API gateway that proxies to Remnawave | NestJS 11, Axios |
-| **Remnawave Panel** | Source of truth (DB, nodes, users) | NestJS + PostgreSQL + Redis |
-| **Nodes** | VPN servers running Xray, managed by the panel | Xray-core, mTLS agent |
+| **Ghost Sphere Web** | Premium UI (SPA), our design | React 19, Vite, Mantine 8, TanStack Query, Zustand, i18next, Framer Motion, Monaco |
+| **Ghost Sphere BFF** | API layer for the UI (clean DTOs, login proxy) | NestJS 11, Axios |
+| **Ghost Sphere Engine** | **Our engine** — a full fork of the Remnawave backend | NestJS 11, Prisma, PostgreSQL, Redis, BullMQ |
+| **Ghost Sphere Nodes** | Fork of the Remnawave node (Xray agent on servers) | Xray-core, mTLS |
 
-**Key idea:** the Ghost Sphere Core **does not store** the panel token. The web client forwards the panel URL and token in `X-GS-Panel-Url` / `X-GS-Panel-Token` headers on every request, so one core can serve multiple panels while the secret stays under the operator's control.
+**Key idea:** the Engine is **your own panel** on your own database, not a call to an external Remnawave. You log into your engine directly (admin login); the BFF just forwards your JWT and shapes responses into convenient DTOs for the UI. The whole stack comes up with a single `docker compose up`.
 
 ---
 
@@ -160,43 +162,43 @@ server {
 
 ### 3.4. Environment variables
 
-**Core (`api/.env`):**
+All values are set in `docker-compose.yml` (`environment` blocks) and can be overridden via env vars.
+
+**Engine:**
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `PORT` | `8088` | Port the core listens on |
-| `NODE_ENV` | — | `production` in Docker |
+| `DATABASE_URL` | `postgresql://ghost:…@db:5432/ghostsphere` | PostgreSQL connection |
+| `REDIS_HOST` / `REDIS_PORT` | `redis` / `6379` | Redis / Valkey |
+| `JWT_AUTH_SECRET` | `ghost_sphere_auth_secret_0001…` | **Change in prod!** JWT signing |
+| `JWT_API_TOKENS_SECRET` | `ghost_sphere_api_secret_0001…` | **Change in prod!** |
+| `DISABLE_FRONTEND` | `true` | Engine doesn't serve a frontend (`web` does) |
+| `SUB_PUBLIC_DOMAIN` | `localhost:8080/api/sub` | Subscription domain |
+| `METRICS_USER` / `METRICS_PASS` | `admin` / `admin` | Metrics access |
 
-**Web (build-time):**
-
-| Variable | Default | Description |
-| --- | --- | --- |
-| `VITE_API_BASE` | `/api` | Base path to the core |
-| `VITE_APP_VERSION` | `0.0.1` | Version shown in the UI |
+**BFF (`api`):** `PORT=8088`, `ENGINE_URL=http://backend:3000`.
+**Web:** `VITE_API_BASE=/api`, `VITE_APP_VERSION=0.0.1`.
+**Database:** `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, plus `GHOST_SPHERE_PORT` (external web port, default `8080`).
 
 ---
 
-## 4. First login & connecting a panel
+## 4. First login
 
-### 4.1. Create an API token in Remnawave
+Ghost Sphere is self-contained: you log into **your own** engine — no external panel required.
 
-1. Sign in to the **Remnawave** admin panel.
-2. Go to **Settings → API tokens**.
-3. Click **Create token**, give it a name (e.g. `Ghost Sphere`).
-4. Copy the **Bearer token** — it is shown only once.
+### 4.1. Create the first admin
 
-> The token has the `API` role and is the correct way to connect external tools (unlike a browser admin session).
+1. After `docker compose up -d --build`, open **http://localhost:8080**.
+2. On the login screen, switch to the **Register** tab.
+3. Enter an **admin username** and **password** (min 4 chars) → **Create admin**.
+4. You land on the “Sphere Overview” dashboard. This is the first and primary panel account.
 
-### 4.2. Connect
+### 4.2. Subsequent logins
 
-On the Ghost Sphere login screen:
+1. Open the panel, **Sign in** tab.
+2. Enter the admin username and password → **Sign in**.
 
-1. **Panel URL** — your Remnawave panel URL, e.g. `https://panel.example.com` (without `/api`).
-2. **API token** — paste the Bearer token from 4.1.
-3. **X-Api-Key (Caddy / tinyauth)** — only fill this if the panel sits behind a proxy with extra auth; otherwise leave empty.
-4. Click **Connect**.
-
-If the URL and token are correct, you land on the “Sphere Overview” dashboard.
+> Technically: the UI sends the login to `POST /api/auth/login` (via BFF → engine), receives a JWT and stores it locally in the browser; the JWT is then attached to all requests. No external token to enter.
 
 ### 4.3. Demo mode
 

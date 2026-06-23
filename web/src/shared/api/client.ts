@@ -14,10 +14,8 @@ export const http: AxiosInstance = axios.create({
 
 http.interceptors.request.use((config) => {
   const { mode, connection } = useSession.getState();
-  if (mode === 'live' && connection) {
-    config.headers.set('X-GS-Panel-Url', connection.url);
-    config.headers.set('X-GS-Panel-Token', connection.token);
-    if (connection.caddyToken) config.headers.set('X-GS-Caddy-Token', connection.caddyToken);
+  if (mode === 'live' && connection?.token) {
+    config.headers.set('Authorization', `Bearer ${connection.token}`);
   }
   return config;
 });
