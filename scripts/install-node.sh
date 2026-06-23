@@ -5,14 +5,15 @@
 #
 # Does EVERYTHING in a single run:
 #   1. installs Docker (if missing) and waits for the daemon
-#   2. opens the node port in the firewall (ufw / firewalld)
-#   3. writes /opt/ghost-sphere-node/{.env,docker-compose.yml}
-#   4. pulls the node image and starts it
-#   5. streams the live log so you watch it come online
+#   2. removes any previous node container (frees the port — no EADDRINUSE)
+#   3. opens the node port in the firewall (ufw / firewalld)
+#   4. writes /opt/ghost-sphere-node/{.env,docker-compose.yml}
+#   5. checks the port is free, pulls the image and starts the node
+#   6. streams the live log so you watch it come online
 #
 # Usage (copy this exact line from Ghost Sphere → Nodes → Create):
 #   SECRET_KEY="<paste>" bash <(curl -Ls https://raw.githubusercontent.com/SKINOREZZZ101/SPHEREGHOST/main/scripts/install-node.sh)
-# Optional: NODE_PORT=2222 (default)
+# Optional: NODE_PORT=2222 (default). Use another port if 2222 is taken.
 # =============================================================================
 set -euo pipefail
 
@@ -68,15 +69,40 @@ ensure_docker() {
   exit 1
 }
 
-open_firewall() {
-  if command -v ufw >/dev/null 2>&1; then
-    ufw allow "${NODE_PORT}/tcp" >/dev/null 2>&1 || true
-    ok "Порт ${NODE_PORT}/tcp открыт (ufw). / Port opened (ufw)."
+# Remove every previous node container so nothing is still holding the port.
+cleanup_old() {
+  log "Убираю прежние контейнеры ноды… / Removing previous node containers…"
+  (cd "${NODE_DIR}" 2>/dev/null && compose down --remove-orphans >/dev/null 2>&1) || true
+  docker rm -f ghost-sphere-node host-sphere-node remnanode >/dev/null 2>&1 || true
+  # Kill ANY container started from the node image (catches duplicates with other names).
+  local olds
+  olds="$(docker ps -aq --filter "ancestor=${IMAGE}" 2>/dev/null || true)"
+  if [[ -n "${olds}" ]]; then docker rm -f ${olds} >/dev/null 2>&1 || true; fi
+  sleep 1
+}
+
+# Print whatever is listening on NODE_PORT (empty if free).
+port_listener() {
+  if command -v ss >/dev/null 2>&1; then
+    ss -ltnp 2>/dev/null | grep -E "[:.]${NODE_PORT}\b" || true
+  elif command -v netstat >/dev/null 2>&1; then
+    netstat -ltnp 2>/dev/null | grep -E "[:.]${NODE_PORT}\b" || true
   fi
-  if command -v firewall-cmd >/dev/null 2>&1; then
-    firewall-cmd --permanent --add-port="${NODE_PORT}/tcp" >/dev/null 2>&1 || true
-    firewall-cmd --reload >/dev/null 2>&1 || true
-    ok "Порт ${NODE_PORT}/tcp открыт (firewalld). / Port opened (firewalld)."
+}
+
+preflight_port() {
+  local who
+  who="$(port_listener)"
+  if [[ -n "${who}" ]]; then
+    err "Порт ${NODE_PORT} уже занят. / Port ${NODE_PORT} is already in use."
+    echo -e "${DIM}${who}${NC}"
+    echo
+    echo -e "  Что делать / What to do:"
+    echo -e "   • если это старый docker-контейнер — удалите его: ${CYAN}docker ps; docker rm -f <имя>${NC}"
+    echo -e "   • если это другой сервис (например SSH на 2222) — выберите другой порт:"
+    echo -e "     ${CYAN}NODE_PORT=2223 SECRET_KEY=\"...\" bash <(curl -Ls https://raw.githubusercontent.com/SKINOREZZZ101/SPHEREGHOST/main/scripts/install-node.sh)${NC}"
+    echo -e "     затем в панели: Ноды → нода → Настройки → Порт = 2223 → Сохранить."
+    exit 1
   fi
 }
 
@@ -104,6 +130,38 @@ EOF
   ok "Конфиг записан в ${NODE_DIR}. / Config written to ${NODE_DIR}."
 }
 
+open_firewall() {
+  if command -v ufw >/dev/null 2>&1; then
+    ufw allow "${NODE_PORT}/tcp" >/dev/null 2>&1 || true
+    ok "Порт ${NODE_PORT}/tcp открыт (ufw). / Port opened (ufw)."
+  fi
+  if command -v firewall-cmd >/dev/null 2>&1; then
+    firewall-cmd --permanent --add-port="${NODE_PORT}/tcp" >/dev/null 2>&1 || true
+    firewall-cmd --reload >/dev/null 2>&1 || true
+    ok "Порт ${NODE_PORT}/tcp открыт (firewalld). / Port opened (firewalld)."
+  fi
+}
+
+verify_running() {
+  sleep 5
+  local state restarting
+  state="$(docker inspect -f '{{.State.Status}}' ghost-sphere-node 2>/dev/null || echo missing)"
+  restarting="$(docker inspect -f '{{.State.Restarting}}' ghost-sphere-node 2>/dev/null || echo false)"
+  if [[ "${state}" != "running" || "${restarting}" == "true" ]]; then
+    err "Нода не стартовала (статус: ${state}). / Node failed to start (status: ${state})."
+    if compose logs --tail=60 2>/dev/null | grep -qi 'EADDRINUSE'; then
+      echo
+      err "Порт ${NODE_PORT} занят (EADDRINUSE). / Port ${NODE_PORT} is in use (EADDRINUSE)."
+      echo -e "${DIM}$(port_listener)${NC}"
+      echo -e "  Перезапустите с другим портом: ${CYAN}NODE_PORT=2223 SECRET_KEY=\"...\" bash <(curl -Ls .../install-node.sh)${NC}"
+      echo -e "  и укажите тот же порт в панели (Ноды → нода → Настройки → Порт)."
+    else
+      compose logs --tail=40 || true
+    fi
+    exit 1
+  fi
+}
+
 main() {
   banner
   need_root
@@ -116,8 +174,10 @@ main() {
   fi
 
   ensure_docker
-  open_firewall
   write_files
+  cleanup_old
+  open_firewall
+  preflight_port
 
   cd "${NODE_DIR}"
   log "Загружаю образ ноды (может занять 1–2 мин)… / Pulling node image (may take 1–2 min)…"
@@ -125,12 +185,7 @@ main() {
   log "Запускаю ноду… / Starting the node…"
   compose up -d --remove-orphans
 
-  sleep 3
-  if [[ "$(docker inspect -f '{{.State.Running}}' ghost-sphere-node 2>/dev/null || echo false)" != "true" ]]; then
-    err "Контейнер не запустился. Логи: / Container failed to start. Logs:"
-    compose logs --tail=60 || true
-    exit 1
-  fi
+  verify_running
 
   echo
   ok "Нода запущена и слушает порт ${NODE_PORT}. / Node is up and listening on ${NODE_PORT}."
@@ -142,13 +197,12 @@ main() {
   echo
   echo -e "${GREEN}════════════════════════════════════════════════════════════════${NC}"
   ok "Готово! / Done!"
-  echo -e "  1) Убедитесь, что порт ${GHOST}${NODE_PORT}/tcp${NC} открыт для IP вашей панели."
-  echo -e "     Make sure port ${GHOST}${NODE_PORT}/tcp${NC} is reachable from your panel IP."
+  echo -e "  1) Убедитесь, что порт ${GHOST}${NODE_PORT}/tcp${NC} открыт для IP вашей панели"
+  echo -e "     (в т.ч. в облачном фаерволе провайдера / cloud firewall)."
   echo -e "  2) В панели Ghost Sphere → Ноды нода поднимется в статус ${GREEN}«подключено»${NC}"
   echo -e "     за 30–60 секунд (панель сама подключится по mTLS)."
-  echo -e "     In Ghost Sphere → Nodes the node turns ${GREEN}\"connected\"${NC} within 30–60s."
   echo
-  echo -e "  Управление / Manage:  ${CYAN}cd ${NODE_DIR} && docker compose logs -f${NC}"
+  echo -e "  Логи / Logs:  ${CYAN}cd ${NODE_DIR} && docker compose logs -f${NC}"
   echo -e "${GREEN}════════════════════════════════════════════════════════════════${NC}"
 }
 
