@@ -45,12 +45,39 @@ ensure_docker() {
   fi
   log "Installing Docker CE + Compose v2 (get.docker.com)…"
   curl -fsSL https://get.docker.com | sh
-  systemctl enable --now docker >/dev/null 2>&1 || true
   if ! docker compose version >/dev/null 2>&1; then
     err "Docker Compose v2 not available after install. Aborting."
     exit 1
   fi
-  ok "Docker is ready."
+  ok "Docker CLI is ready."
+}
+
+# Make sure the Docker daemon is actually reachable (handles stale sockets left
+# behind by a previous docker.io / snap docker install).
+start_docker() {
+  log "Ensuring the Docker daemon is running…"
+  systemctl unmask docker.service docker.socket >/dev/null 2>&1 || true
+  systemctl enable --now containerd >/dev/null 2>&1 || true
+  systemctl enable --now docker >/dev/null 2>&1 || true
+
+  local tries=0
+  until docker info >/dev/null 2>&1; do
+    tries=$((tries + 1))
+    if [ "$tries" -eq 4 ]; then
+      log "Daemon not up — clearing stale socket and restarting…"
+      systemctl stop docker >/dev/null 2>&1 || true
+      rm -f /var/run/docker.sock
+      systemctl restart docker >/dev/null 2>&1 || true
+    fi
+    if [ "$tries" -ge 16 ]; then
+      err "Docker daemon is not reachable. Diagnostics below:"
+      systemctl --no-pager status docker 2>&1 | tail -n 15 || true
+      journalctl -u docker --no-pager -n 40 2>&1 || true
+      exit 1
+    fi
+    sleep 2
+  done
+  ok "Docker daemon is running."
 }
 
 clone_repo() {
@@ -77,6 +104,7 @@ main() {
   require_root
   cleanup_conflicts
   ensure_docker
+  start_docker
   command -v git >/dev/null 2>&1 || { log "Installing git…"; apt-get update -y >/dev/null && apt-get install -y git >/dev/null; }
   clone_repo
   launch
