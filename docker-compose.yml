@@ -129,6 +129,7 @@ services:
       - '${GHOST_SPHERE_PORT:-8080}:80'
     depends_on:
       - api
+      - backend
     networks: [sphere]
 
 networks:

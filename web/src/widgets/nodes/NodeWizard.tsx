@@ -79,9 +79,12 @@ export function NodeWizard({ opened, onClose }: NodeWizardProps) {
 
   const step1Valid = name.trim().length >= 3 && address.trim().length >= 2;
 
-  const copy = (value: string, label: string) => {
-    void copyToClipboard(value);
-    notifications.show({ message: label, color: 'teal' });
+  const copy = async (value: string, label: string) => {
+    const ok = await copyToClipboard(value);
+    notifications.show({
+      message: ok ? label : 'Не удалось скопировать — выделите текст вручную',
+      color: ok ? 'teal' : 'red',
+    });
   };
 
   const createNode = () => {
