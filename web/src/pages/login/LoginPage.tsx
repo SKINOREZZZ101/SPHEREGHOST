@@ -81,9 +81,22 @@ export default function LoginPage() {
       if (!res?.accessToken) throw new Error('no token');
       loginLive({ name: username.trim(), token: res.accessToken });
     } catch (e) {
-      const data = (e as { response?: { data?: { message?: string | string[] } } })?.response?.data;
-      const msg = Array.isArray(data?.message) ? data?.message.join('; ') : data?.message;
-      setError(msg || t('auth.loginFailed'));
+      const err = e as {
+        response?: { status?: number; data?: { message?: string | string[] } };
+        code?: string;
+        message?: string;
+      };
+      let detail: string;
+      if (err.response) {
+        const m = err.response.data?.message;
+        const text = Array.isArray(m) ? m.join('; ') : m;
+        detail = `HTTP ${err.response.status ?? '?'}: ${text ?? t('auth.loginFailed')}`;
+      } else {
+        detail = `${t('auth.loginFailed')} (${err.code ?? 'NETWORK'}: ${err.message ?? 'no response'})`;
+      }
+      // eslint-disable-next-line no-console
+      console.error('[GhostSphere] auth request failed:', err);
+      setError(detail);
       setBusy(false);
     }
   };
