@@ -9,6 +9,7 @@ import { CatalogController } from './modules/catalog.controller';
 import { UsersController } from './modules/users.controller';
 import { NativeController } from './modules/native.controller';
 import { NativeService } from './modules/native.service';
+import { ProxyController } from './modules/proxy.controller';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true })],
@@ -20,6 +21,7 @@ import { NativeService } from './modules/native.service';
     CatalogController,
     UsersController,
     NativeController,
+    ProxyController,
   ],
   providers: [RemnawaveService, NativeService],
 })

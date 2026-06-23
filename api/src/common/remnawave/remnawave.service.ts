@@ -69,6 +69,32 @@ export class RemnawaveService {
     }
   }
 
+  /**
+   * Transparent passthrough to the engine: forwards method/path/query/body and
+   * returns the RAW engine response untouched (no envelope unwrap). Powers the
+   * /api/rw/* proxy so the entire Remnawave API surface is available to the UI.
+   */
+  async raw(
+    creds: PanelCreds,
+    method: Method,
+    path: string,
+    data?: unknown,
+  ): Promise<{ status: number; data: unknown }> {
+    try {
+      const res = await this.client(creds).request({
+        method,
+        url: path,
+        data,
+        validateStatus: () => true,
+      });
+      return { status: res.status, data: res.data };
+    } catch (err) {
+      const ax = err as AxiosError;
+      this.logger.warn(`RAW ${method} ${path} failed: ${ax.message}`);
+      return { status: ax.response?.status ?? 502, data: { message: `Engine unreachable: ${ax.message}` } };
+    }
+  }
+
   get<T = unknown>(creds: PanelCreds, path: string) {
     return this.request<T>(creds, 'GET', path);
   }

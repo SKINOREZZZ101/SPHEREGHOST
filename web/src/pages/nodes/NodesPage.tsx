@@ -46,6 +46,7 @@ import { useCreateNode, useNodeAction, useNodes, useProfiles } from '@shared/api
 import { clampPercent, copyToClipboard, countryFlag, formatBytes, formatUptime } from '@shared/lib/format';
 import type { GsNode } from '@shared/api/types';
 import { SphereApi } from '@shared/api/sphere';
+import { NodeWizard } from '@widgets/nodes/NodeWizard';
 
 export default function NodesPage() {
   const { t } = useTranslation();
@@ -53,7 +54,6 @@ export default function NodesPage() {
   const { data: nodes = [], isLoading } = useNodes();
   const [view, setView] = useState<'cards' | 'table'>('cards');
   const [createOpen, createCtl] = useDisclosure(false);
-  const [installOpen, installCtl] = useDisclosure(false);
 
   useEffect(() => {
     if (params.get('create') === '1') {
@@ -83,9 +83,6 @@ export default function NodesPage() {
             ]}
             size="sm"
           />
-          <Button variant="default" leftSection={<IconTerminal2 size={16} />} onClick={installCtl.open}>
-            {t('nodes.install')}
-          </Button>
           <Button
             leftSection={<IconCirclePlus size={16} />}
             onClick={createCtl.open}
@@ -140,8 +137,7 @@ export default function NodesPage() {
         )}
       </Stack>
 
-      <CreateNodeModal opened={createOpen} onClose={createCtl.close} />
-      <InstallWizard opened={installOpen} onClose={installCtl.close} />
+      <NodeWizard opened={createOpen} onClose={createCtl.close} />
     </Page>
   );
 }
