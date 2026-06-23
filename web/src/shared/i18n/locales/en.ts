@@ -131,6 +131,7 @@ export const en = {
     signInBtn: 'Sign in',
     registerBtn: 'Create admin',
     firstAdminHint: 'First run? Create an admin in the "Register" tab.',
+    passwordRule: 'Password: at least 24 characters with uppercase, lowercase and a digit.',
     loginFailed: 'Invalid username/password, or the engine is unreachable.',
     panelSubtitle: 'Sign in to your Ghost Sphere panel',
   },

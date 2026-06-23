@@ -61,8 +61,10 @@ export default function LoginPage() {
       const res = await fn(username.trim(), password);
       if (!res?.accessToken) throw new Error('no token');
       loginLive({ name: username.trim(), token: res.accessToken });
-    } catch {
-      setError(t('auth.loginFailed'));
+    } catch (e) {
+      const data = (e as { response?: { data?: { message?: string | string[] } } })?.response?.data;
+      const msg = Array.isArray(data?.message) ? data?.message.join('; ') : data?.message;
+      setError(msg || t('auth.loginFailed'));
       setBusy(false);
     }
   };
@@ -232,7 +234,7 @@ export default function LoginPage() {
 
               {tab === 'register' && (
                 <Text fz="xs" c="dimmed">
-                  {t('auth.firstAdminHint')}
+                  {t('auth.firstAdminHint')} {t('auth.passwordRule')}
                 </Text>
               )}
 
