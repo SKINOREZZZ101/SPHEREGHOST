@@ -1,4 +1,14 @@
-import { BadRequestException, Body, Controller, Delete, Get, Headers, Param, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Headers,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import type { IncomingHttpHeaders } from 'http';
 import { RemnawaveService } from '../common/remnawave/remnawave.service';
 import { panelFromHeaders } from '../common/remnawave/panel.types';
@@ -6,6 +16,8 @@ import { mapNode } from '../common/mappers';
 import type { GsNode } from '../common/dto';
 
 const ACTIONS = new Set(['enable', 'disable', 'restart', 'reset-traffic']);
+
+type NodeUpdateBody = Partial<GsNode> & { isTrafficTrackingActive?: boolean };
 
 @Controller('nodes')
 export class NodesController {
@@ -16,6 +28,38 @@ export class NodesController {
     const creds = panelFromHeaders(headers);
     const raw = await this.rw.get<any[]>(creds, '/nodes');
     return (Array.isArray(raw) ? raw : []).map(mapNode).sort((a, b) => a.viewPosition - b.viewPosition);
+  }
+
+  @Get(':uuid')
+  async getOne(@Headers() headers: IncomingHttpHeaders, @Param('uuid') uuid: string): Promise<GsNode> {
+    const creds = panelFromHeaders(headers);
+    const raw = await this.rw.get<any>(creds, `/nodes/${uuid}`);
+    return mapNode(raw ?? {});
+  }
+
+  @Patch()
+  async update(@Headers() headers: IncomingHttpHeaders, @Body() body: NodeUpdateBody): Promise<GsNode> {
+    if (!body.uuid) throw new BadRequestException('uuid is required');
+    const creds = panelFromHeaders(headers);
+    const payload: Record<string, unknown> = { uuid: body.uuid };
+    if (body.name != null) payload.name = body.name;
+    if (body.address != null) payload.address = body.address;
+    if (body.port != null) payload.port = body.port;
+    if (body.countryCode != null) payload.countryCode = body.countryCode.toUpperCase().slice(0, 2);
+    if (body.consumptionMultiplier != null) payload.consumptionMultiplier = body.consumptionMultiplier;
+    if (body.trafficLimitBytes != null) payload.trafficLimitBytes = body.trafficLimitBytes;
+    if (typeof body.isTrafficTrackingActive === 'boolean') {
+      payload.isTrafficTrackingActive = body.isTrafficTrackingActive;
+    }
+    if (Array.isArray(body.tags)) payload.tags = body.tags;
+    if (body.activeConfigProfileUuid) {
+      payload.configProfile = {
+        activeConfigProfileUuid: body.activeConfigProfileUuid,
+        activeInbounds: Array.isArray(body.activeInbounds) ? body.activeInbounds : [],
+      };
+    }
+    const updated = await this.rw.patch<any>(creds, '/nodes', payload);
+    return mapNode(updated ?? {});
   }
 
   @Post()

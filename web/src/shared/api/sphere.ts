@@ -87,6 +87,17 @@ export const SphereApi = {
 
   // ---------- nodes ----------
   nodes: () => get<GsNode[]>('/nodes', () => db().nodes),
+  node: (uuid: string) =>
+    get<GsNode | undefined>(`/nodes/${uuid}`, () => db().nodes.find((n) => n.uuid === uuid)),
+  updateNode: (payload: NodeUpdatePayload) =>
+    mutate(
+      () => {
+        const node = db().nodes.find((n) => n.uuid === payload.uuid);
+        if (node) Object.assign(node, payload);
+        return node ?? null;
+      },
+      async () => (await http.patch<GsNode>('/nodes', payload)).data,
+    ),
   nodeAction: (uuid: string, action: 'enable' | 'disable' | 'restart' | 'reset-traffic' | 'delete') =>
     mutate(
       () => {
@@ -303,5 +314,7 @@ function randB64(len: number): string {
   for (let i = 0; i < len; i++) s += chars[Math.floor(Math.random() * chars.length)];
   return s;
 }
+
+export type NodeUpdatePayload = Partial<GsNode> & { uuid: string; isTrafficTrackingActive?: boolean };
 
 export type { DemoStore };

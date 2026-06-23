@@ -18,6 +18,7 @@ export const qk = {
   trafficSeries: ['traffic-series'] as const,
   nodeLoad: ['node-load'] as const,
   nodes: ['nodes'] as const,
+  node: (uuid: string) => ['node', uuid] as const,
   profiles: ['profiles'] as const,
   profile: (uuid: string) => ['profile', uuid] as const,
   snippets: ['snippets'] as const,

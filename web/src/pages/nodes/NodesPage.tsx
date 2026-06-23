@@ -47,6 +47,7 @@ import { clampPercent, copyToClipboard, countryFlag, formatBytes, formatUptime }
 import type { GsNode } from '@shared/api/types';
 import { SphereApi } from '@shared/api/sphere';
 import { NodeWizard } from '@widgets/nodes/NodeWizard';
+import { NodeDrawer } from '@widgets/nodes/NodeDrawer';
 
 export default function NodesPage() {
   const { t } = useTranslation();
@@ -54,6 +55,7 @@ export default function NodesPage() {
   const { data: nodes = [], isLoading } = useNodes();
   const [view, setView] = useState<'cards' | 'table'>('cards');
   const [createOpen, createCtl] = useDisclosure(false);
+  const [selected, setSelected] = useState<GsNode | null>(null);
 
   useEffect(() => {
     if (params.get('create') === '1') {
@@ -129,15 +131,16 @@ export default function NodesPage() {
         ) : view === 'cards' ? (
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
             {nodes.map((node, i) => (
-              <NodeCard key={node.uuid} node={node} delay={i * 0.04} />
+              <NodeCard key={node.uuid} node={node} delay={i * 0.04} onOpen={setSelected} />
             ))}
           </SimpleGrid>
         ) : (
-          <NodesTable nodes={nodes} />
+          <NodesTable nodes={nodes} onOpen={setSelected} />
         )}
       </Stack>
 
       <NodeWizard opened={createOpen} onClose={createCtl.close} />
+      <NodeDrawer node={selected} opened={!!selected} onClose={() => setSelected(null)} />
     </Page>
   );
 }
@@ -209,14 +212,14 @@ function NodeActions({ node }: { node: GsNode }) {
   );
 }
 
-function NodeCard({ node, delay }: { node: GsNode; delay: number }) {
+function NodeCard({ node, delay, onOpen }: { node: GsNode; delay: number; onOpen: (n: GsNode) => void }) {
   const { t } = useTranslation();
   const trafficPct = node.trafficLimitBytes
     ? clampPercent(node.trafficUsedBytes, node.trafficLimitBytes)
     : 0;
 
   return (
-    <GlassCard delay={delay} interactive glow={node.isConnected ? 'none' : 'none'}>
+    <GlassCard delay={delay} interactive onClick={() => onOpen(node)}>
       <Group justify="space-between" align="flex-start" wrap="nowrap">
         <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
           <Box style={{ fontSize: 30, lineHeight: 1 }}>{countryFlag(node.countryCode)}</Box>
@@ -229,7 +232,9 @@ function NodeCard({ node, delay }: { node: GsNode; delay: number }) {
             </Text>
           </Box>
         </Group>
-        <NodeActions node={node} />
+        <Box onClick={(e) => e.stopPropagation()}>
+          <NodeActions node={node} />
+        </Box>
       </Group>
 
       <Group justify="space-between" mt="md" mb="xs">
@@ -296,7 +301,7 @@ function NodeCard({ node, delay }: { node: GsNode; delay: number }) {
   );
 }
 
-function NodesTable({ nodes }: { nodes: GsNode[] }) {
+function NodesTable({ nodes, onOpen }: { nodes: GsNode[]; onOpen: (n: GsNode) => void }) {
   const { t } = useTranslation();
   return (
     <GlassCard p={0} style={{ overflow: 'hidden' }}>
@@ -315,7 +320,7 @@ function NodesTable({ nodes }: { nodes: GsNode[] }) {
           </Table.Thead>
           <Table.Tbody>
             {nodes.map((n) => (
-              <Table.Tr key={n.uuid}>
+              <Table.Tr key={n.uuid} style={{ cursor: 'pointer' }} onClick={() => onOpen(n)}>
                 <Table.Td>
                   <Group gap="sm" wrap="nowrap">
                     <span style={{ fontSize: 20 }}>{countryFlag(n.countryCode)}</span>
@@ -344,7 +349,7 @@ function NodesTable({ nodes }: { nodes: GsNode[] }) {
                     {n.xrayVersion ?? '—'}
                   </Text>
                 </Table.Td>
-                <Table.Td>
+                <Table.Td onClick={(e) => e.stopPropagation()}>
                   <NodeActions node={n} />
                 </Table.Td>
               </Table.Tr>

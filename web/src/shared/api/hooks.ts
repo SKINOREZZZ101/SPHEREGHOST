@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { SphereApi } from './sphere';
+import { SphereApi, type NodeUpdatePayload } from './sphere';
 import { qk, queryClient } from './query-client';
 import { useSettings } from '@entities/settings/settings.store';
 
@@ -23,6 +23,27 @@ export function useNodeLoad() {
 export function useNodes() {
   const poll = usePoll();
   return useQuery({ queryKey: qk.nodes, queryFn: SphereApi.nodes, refetchInterval: poll });
+}
+
+export function useNode(uuid: string | null) {
+  const poll = usePoll();
+  return useQuery({
+    queryKey: qk.node(uuid ?? ''),
+    queryFn: () => SphereApi.node(uuid as string),
+    enabled: !!uuid,
+    refetchInterval: poll,
+  });
+}
+
+export function useUpdateNode() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: NodeUpdatePayload) => SphereApi.updateNode(payload),
+    onSuccess: (_d, vars) => {
+      client.invalidateQueries({ queryKey: qk.nodes });
+      client.invalidateQueries({ queryKey: qk.node(vars.uuid) });
+    },
+  });
 }
 
 export const useProfiles = () => useQuery({ queryKey: qk.profiles, queryFn: SphereApi.profiles });
