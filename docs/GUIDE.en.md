@@ -398,7 +398,21 @@ https://<subscription-domain>/<shortUuid>/<client-type>
 
 - `shortUuid` — a short unique user identifier (generated on creation, changes on “revoke”).
 - `<client-type>` — optional, forces a format: `json`, `v2ray-json`, `clash`, `mihomo`, `singbox`, `stash`.
-- The subscription domain is configured on the Remnawave side (`SUB_PUBLIC_DOMAIN`) and usually points to the “subscription page”.
+- The subscription domain is set via `SUB_PUBLIC_DOMAIN`.
+
+> **How it works in Ghost Sphere (self-contained build).** Subscriptions are served by the engine, but requests go **through the panel**: nginx routes the `/api/sub/...` path straight to the engine (bypassing the BFF). So the link looks like:
+>
+> ```
+> http://<panel-address>:8080/api/sub/<shortUuid>
+> ```
+>
+> For links to be generated correctly, set this in the `.env` file next to `docker-compose.yml`:
+>
+> ```ini
+> SUB_PUBLIC_DOMAIN=<panel-address>:8080/api/sub
+> ```
+>
+> where `<panel-address>` is the public IP or domain of the panel server (e.g. `188.127.235.36`). The `/api/sub` suffix is required. After editing `.env`, recreate the engine: `docker compose up -d --no-deps --force-recreate backend`. Behind an HTTPS reverse proxy, use the domain without a port (`panel.example.com/api/sub`).
 
 In Ghost Sphere you can copy a ready link in the **Users** section (copy icon) or see it on the user card.
 
