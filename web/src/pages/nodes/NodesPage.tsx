@@ -369,15 +369,29 @@ function CreateNodeModal({ opened, onClose }: { opened: boolean; onClose: () => 
   const [port, setPort] = useState<number | string>(2222);
   const [country, setCountry] = useState('');
   const [profile, setProfile] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  // Default to the first available config profile.
+  useEffect(() => {
+    if (opened && !profile && profiles.length > 0) setProfile(profiles[0].uuid);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened, profiles]);
+
+  const selectedProfile = profiles.find((p) => p.uuid === profile);
+  const inbounds = selectedProfile?.inbounds ?? [];
+  const nameOk = name.trim().length >= 3;
+  const canCreate = nameOk && address.trim().length >= 2 && !!profile;
 
   const submit = () => {
+    setErr(null);
     create.mutate(
       {
-        name,
-        address,
-        port: Number(port),
-        countryCode: country.toUpperCase().slice(0, 2),
+        name: name.trim(),
+        address: address.trim(),
+        port: Number(port) || 2222,
+        countryCode: (country || 'XX').toUpperCase().slice(0, 2),
         activeConfigProfileUuid: profile,
+        activeInbounds: inbounds.map((i) => i.uuid),
       },
       {
         onSuccess: () => {
@@ -386,6 +400,12 @@ function CreateNodeModal({ opened, onClose }: { opened: boolean; onClose: () => 
           setName('');
           setAddress('');
           setCountry('');
+          setErr(null);
+        },
+        onError: (e: unknown) => {
+          const data = (e as { response?: { data?: { message?: string | string[] } } })?.response?.data;
+          const m = Array.isArray(data?.message) ? data?.message.join('; ') : data?.message;
+          setErr(m || t('errors.generic'));
         },
       },
     );
@@ -394,7 +414,13 @@ function CreateNodeModal({ opened, onClose }: { opened: boolean; onClose: () => 
   return (
     <Modal opened={opened} onClose={onClose} title={<Title order={3}>{t('nodes.create')}</Title>} size="md">
       <Stack gap="md">
-        <TextInput label={t('common.name')} value={name} onChange={(e) => setName(e.currentTarget.value)} placeholder="Frankfurt Core" />
+        <TextInput
+          label={t('common.name')}
+          value={name}
+          onChange={(e) => setName(e.currentTarget.value)}
+          placeholder="Frankfurt Core"
+          error={name.length > 0 && !nameOk ? '≥ 3' : undefined}
+        />
         <Group grow>
           <TextInput label={t('nodes.address')} value={address} onChange={(e) => setAddress(e.currentTarget.value)} placeholder="49.12.10.20" />
           <NumberInput label={t('nodes.port')} value={port} onChange={setPort} min={1} max={65535} />
@@ -407,8 +433,28 @@ function CreateNodeModal({ opened, onClose }: { opened: boolean; onClose: () => 
             data={profiles.map((p) => ({ value: p.uuid, label: p.name }))}
             value={profile}
             onChange={setProfile}
+            allowDeselect={false}
           />
         </Group>
+        {profile && (
+          <Box>
+            <Text fz="xs" c="dimmed" mb={4}>
+              {t('nodes.inbounds')}: {inbounds.length}
+            </Text>
+            <Group gap={6}>
+              {inbounds.map((ib) => (
+                <Badge key={ib.uuid} size="sm" variant="default" radius="sm">
+                  {ib.tag}
+                </Badge>
+              ))}
+            </Group>
+          </Box>
+        )}
+        {err && (
+          <Text c="red.4" fz="sm">
+            {err}
+          </Text>
+        )}
         <Group justify="flex-end" mt="sm">
           <Button variant="default" onClick={onClose}>
             {t('common.cancel')}
@@ -416,7 +462,7 @@ function CreateNodeModal({ opened, onClose }: { opened: boolean; onClose: () => 
           <Button
             onClick={submit}
             loading={create.isPending}
-            disabled={!name || !address}
+            disabled={!canCreate}
             variant="gradient"
             gradient={{ from: 'ghost.6', to: 'spectre.5', deg: 135 }}
           >
@@ -442,7 +488,7 @@ function InstallWizard({ opened, onClose }: { opened: boolean; onClose: () => vo
   }, [opened]);
 
   const command =
-    'bash <(curl -Ls https://raw.githubusercontent.com/ghost-os/ghost-sphere/main/scripts/install-node.sh)';
+    'SECRET_KEY="<вставьте из поля ниже>" bash <(curl -Ls https://raw.githubusercontent.com/SKINOREZZZ101/SPHEREGHOST/main/scripts/install-node.sh)';
 
   const steps = [
     t('nodes.installStep1'),

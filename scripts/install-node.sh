@@ -6,7 +6,7 @@
 # Deploys a Remnawave-compatible VPN node (Xray) on a clean server.
 # Usage:
 #   SECRET_KEY="<paste from Ghost Sphere install wizard>" \
-#   bash <(curl -Ls https://raw.githubusercontent.com/ghost-os/ghost-sphere/main/scripts/install-node.sh)
+#   bash <(curl -Ls https://raw.githubusercontent.com/SKINOREZZZ101/SPHEREGHOST/main/scripts/install-node.sh)
 # =============================================================================
 set -euo pipefail
 

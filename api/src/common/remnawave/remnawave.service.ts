@@ -41,10 +41,17 @@ export class RemnawaveService {
     try {
       const res = await this.client(creds).request({ method, url: path, data });
       if (res.status >= 400) {
-        throw new HttpException(
-          (res.data as { message?: string })?.message ?? `Panel responded ${res.status}`,
-          res.status,
+        const body = res.data as { message?: string | string[] } | string | undefined;
+        let msg: string | undefined;
+        if (body && typeof body === 'object') {
+          msg = Array.isArray(body.message) ? body.message.join('; ') : body.message;
+        } else if (typeof body === 'string') {
+          msg = body;
+        }
+        this.logger.warn(
+          `${method} ${path} -> ${res.status}: ${JSON.stringify(res.data)?.slice(0, 400)}`,
         );
+        throw new HttpException(msg ?? `Engine responded ${res.status}`, res.status);
       }
       const body = res.data as { response?: T } | T;
       if (body && typeof body === 'object' && 'response' in body) {

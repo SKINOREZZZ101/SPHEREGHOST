@@ -21,17 +21,21 @@ export class NodesController {
   @Post()
   async create(@Headers() headers: IncomingHttpHeaders, @Body() body: Partial<GsNode>) {
     const creds = panelFromHeaders(headers);
-    const payload = {
+    // The engine requires configProfile to be nested with a valid profile UUID
+    // and an array of inbound UUIDs.
+    const payload: Record<string, unknown> = {
       name: body.name,
       address: body.address,
       port: body.port ?? 2222,
-      countryCode: body.countryCode ?? 'XX',
-      activeConfigProfileUuid: body.activeConfigProfileUuid ?? undefined,
-      activeInbounds: body.activeInbounds ?? [],
-      consumptionMultiplier: body.consumptionMultiplier ?? 1,
-      trafficLimitBytes: body.trafficLimitBytes ?? undefined,
+      countryCode: (body.countryCode || 'XX').toUpperCase().slice(0, 2),
       isTrafficTrackingActive: false,
+      configProfile: {
+        activeConfigProfileUuid: body.activeConfigProfileUuid,
+        activeInbounds: Array.isArray(body.activeInbounds) ? body.activeInbounds : [],
+      },
     };
+    if (body.consumptionMultiplier) payload.consumptionMultiplier = body.consumptionMultiplier;
+    if (body.trafficLimitBytes) payload.trafficLimitBytes = body.trafficLimitBytes;
     const created = await this.rw.post<any>(creds, '/nodes', payload);
     return mapNode(created ?? {});
   }
