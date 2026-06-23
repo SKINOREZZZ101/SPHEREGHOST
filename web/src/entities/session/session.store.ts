@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { STORAGE_KEYS } from '@shared/config';
+import { genId } from '@shared/lib/id';
 
 export type SphereMode = 'demo' | 'live';
 
@@ -46,7 +47,7 @@ export const useSession = create<SessionState>()(
           mode: 'live',
           authenticated: true,
           connection: {
-            id: crypto.randomUUID(),
+            id: genId(),
             name: conn.name,
             url: conn.url || 'engine://local',
             token: conn.token,

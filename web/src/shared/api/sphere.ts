@@ -2,6 +2,7 @@
 // It transparently serves the in-memory demo dataset in demo mode, or
 // proxies through the Ghost Sphere Core gateway in live mode.
 import { http, demoDelay } from './client';
+import { genId } from '@shared/lib/id';
 import { isDemo } from '@entities/session/session.store';
 import * as demo from './demo';
 import type {
@@ -121,7 +122,7 @@ export const SphereApi = {
     mutate(
       () => {
         const node: GsNode = {
-          uuid: crypto.randomUUID(),
+          uuid: genId(),
           name: payload.name ?? 'New Node',
           address: payload.address ?? '0.0.0.0',
           port: payload.port ?? 2222,
@@ -203,7 +204,7 @@ export const SphereApi = {
       () => {
         const short = Math.random().toString(36).slice(2, 18);
         const u: GsUser = {
-          uuid: crypto.randomUUID(),
+          uuid: genId(),
           shortUuid: short,
           username: payload.username ?? `user_${Math.random().toString(36).slice(2, 7)}`,
           status: 'ACTIVE',
@@ -256,7 +257,7 @@ export const SphereApi = {
     mutate(
       () => {
         const b: GsBackup = {
-          id: crypto.randomUUID(),
+          id: genId(),
           createdAt: new Date().toISOString(),
           sizeBytes: Math.floor((40 + Math.random() * 200) * 1024 * 1024),
           destination: payload.destination ?? 'local',
@@ -285,7 +286,7 @@ export const SphereApi = {
     mutate(
       () => {
         const token = `eyJhbGciOiJIUzI1Ni${randB64(120)}`;
-        db().tokens.unshift({ uuid: crypto.randomUUID(), name, tokenPreview: `${token.slice(0, 10)}…${token.slice(-4)}`, createdAt: new Date().toISOString() });
+        db().tokens.unshift({ uuid: genId(), name, tokenPreview: `${token.slice(0, 10)}…${token.slice(-4)}`, createdAt: new Date().toISOString() });
         return { token };
       },
       async () => (await http.post<{ token: string }>('/keys/tokens', { name })).data,

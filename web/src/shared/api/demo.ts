@@ -1,5 +1,6 @@
 // Rich, deterministic demo dataset so Ghost Sphere is fully explorable
 // without a live Remnawave panel. Numbers are randomized per-load for life.
+import { genId } from '@shared/lib/id';
 import type {
   ActivityEvent,
   GsApiToken,
@@ -28,7 +29,7 @@ function pick<T>(arr: T[]): T {
   return arr[rand(0, arr.length - 1)];
 }
 function uuid(): string {
-  return crypto.randomUUID();
+  return genId();
 }
 function isoAgo(minutes: number): string {
   return new Date(Date.now() - minutes * 60_000).toISOString();
