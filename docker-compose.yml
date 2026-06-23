@@ -1,0 +1,36 @@
+# Ghost Sphere — one-command install.
+#   docker compose up -d
+# Then open http://localhost:8080 and connect your Remnawave panel
+# (or click "Enter demo mode" to explore on demo data).
+#
+# Developed by Ghost OS.
+
+services:
+  api:
+    build:
+      context: ./api
+    container_name: ghost-sphere-core
+    restart: unless-stopped
+    environment:
+      PORT: 8088
+      NODE_ENV: production
+    expose:
+      - '8088'
+    networks:
+      - sphere
+
+  web:
+    build:
+      context: ./web
+    container_name: ghost-sphere-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - '${GHOST_SPHERE_PORT:-8080}:80'
+    networks:
+      - sphere
+
+networks:
+  sphere:
+    driver: bridge

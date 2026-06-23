@@ -1,0 +1,19 @@
+{
+  "name": "ghost-sphere",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Ghost Sphere — the premium unified control plane for the Remnawave VPN ecosystem. Developed by Ghost OS.",
+  "author": "Ghost OS",
+  "license": "AGPL-3.0-only",
+  "scripts": {
+    "dev:web": "npm --prefix web run dev",
+    "dev:api": "npm --prefix api run start:dev",
+    "build:web": "npm --prefix web run build",
+    "build:api": "npm --prefix api run build",
+    "build": "npm run build:api && npm run build:web",
+    "install:all": "npm --prefix web install && npm --prefix api install",
+    "up": "docker compose up -d --build",
+    "down": "docker compose down"
+  },
+  "workspaces": []
+}

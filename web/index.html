@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ru" data-mantine-color-scheme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/ghost.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#07070b" />
+    <meta name="description" content="Ghost Sphere — премиальная единая панель управления экосистемой VPN. Разработано Ghost OS." />
+    <title>Ghost Sphere — Control Plane</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      html,
+      body,
+      #root {
+        height: 100%;
+        margin: 0;
+        background-color: #07070b;
+      }
+      /* Pre-hydration boot screen to avoid white flash */
+      #gs-boot {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background:
+          radial-gradient(900px circle at 50% 12%, rgba(124, 92, 255, 0.16), transparent 60%),
+          radial-gradient(700px circle at 84% 90%, rgba(34, 211, 238, 0.1), transparent 55%), #07070b;
+        z-index: 9999;
+        transition: opacity 0.45s ease;
+      }
+      #gs-boot .ring {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        border: 2px solid rgba(124, 92, 255, 0.18);
+        border-top-color: #7c5cff;
+        border-right-color: #22d3ee;
+        animation: gs-spin 0.9s cubic-bezier(0.5, 0.1, 0.3, 1) infinite;
+      }
+      @keyframes gs-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="gs-boot"><div class="ring"></div></div>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

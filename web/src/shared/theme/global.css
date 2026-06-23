@@ -1,0 +1,225 @@
+/* ============================================================
+   Ghost Sphere — global styles
+   Premium dark "Ghost OS" aesthetic: deep space, spectral glow,
+   glass surfaces, subtle grain. Animations are restrained so the
+   interface stays fast and uncluttered.
+   ============================================================ */
+
+:root {
+  color-scheme: dark;
+  --gs-grain-opacity: 0.035;
+  --gs-radius-glass: 18px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(124, 92, 255, 0.45) transparent;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--gs-bg, #07070b);
+  color: var(--gs-text, #c7c8d6);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'ss01', 'cv01', 'cv03';
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* The living aurora backdrop layer */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(1200px circle at 12% -10%, rgba(124, 92, 255, 0.16), transparent 45%),
+    radial-gradient(1000px circle at 92% 6%, rgba(34, 211, 238, 0.12), transparent 45%),
+    radial-gradient(900px circle at 60% 120%, rgba(241, 41, 179, 0.08), transparent 50%);
+  pointer-events: none;
+  animation: gs-aurora 24s ease-in-out infinite alternate;
+}
+
+/* Fine film grain to add depth without busyness */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--gs-grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@keyframes gs-aurora {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(0, -1.4%, 0) scale(1.04);
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  background-color: rgba(124, 92, 255, 0.4);
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(124, 92, 255, 0.65);
+}
+
+::selection {
+  background: rgba(124, 92, 255, 0.4);
+  color: #fff;
+}
+
+/* ---------- Reusable glass / glow utilities ---------- */
+
+.gs-glass {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012));
+  border: 1px solid var(--gs-border, rgba(255, 255, 255, 0.07));
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+}
+
+.gs-glow-ghost {
+  box-shadow:
+    0 0 0 1px rgba(124, 92, 255, 0.32),
+    0 0 30px rgba(124, 92, 255, 0.22);
+}
+
+.gs-glow-spectre {
+  box-shadow:
+    0 0 0 1px rgba(34, 211, 238, 0.32),
+    0 0 28px rgba(34, 211, 238, 0.18);
+}
+
+.gs-card-interactive {
+  transition:
+    transform 0.18s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.gs-card-interactive:hover {
+  transform: translateY(-3px);
+  border-color: var(--gs-border-strong);
+}
+
+.gs-nav-item {
+  transition: background 0.16s ease;
+}
+.gs-nav-item:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.gs-gradient-text {
+  background: linear-gradient(135deg, #b9a6ff 0%, #8b5cff 40%, #22d3ee 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.gs-hairline {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(124, 92, 255, 0.4),
+    rgba(34, 211, 238, 0.3),
+    transparent
+  );
+  border: none;
+}
+
+/* Animated entrance used by the page wrapper */
+@keyframes gs-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Pulsing dot for "online" indicators */
+@keyframes gs-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 255, 124, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(34, 255, 124, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 255, 124, 0);
+  }
+}
+
+.gs-live-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #22ff7c;
+  animation: gs-pulse 2s infinite;
+}
+
+/* Shimmer used by skeleton loaders */
+@keyframes gs-shimmer {
+  0% {
+    background-position: -480px 0;
+  }
+  100% {
+    background-position: 480px 0;
+  }
+}
+
+.gs-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.02) 25%,
+    rgba(255, 255, 255, 0.08) 37%,
+    rgba(255, 255, 255, 0.02) 63%
+  );
+  background-size: 960px 100%;
+  animation: gs-shimmer 1.4s ease-in-out infinite;
+}
+
+/* Conic spinning border for "energetic" cards */
+@keyframes gs-spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Monaco editor refinements */
+.monaco-editor,
+.monaco-editor .margin {
+  background-color: transparent !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
