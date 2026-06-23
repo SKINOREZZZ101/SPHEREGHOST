@@ -6,6 +6,8 @@ FROM node:24-slim AS backend-build
 WORKDIR /opt/app
 
 ENV PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x,linux-arm64-openssl-3.0.x
+# Give the Nest/TS build enough heap on low-RAM servers (works together with swap).
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 COPY package*.json ./
 COPY prisma ./prisma

@@ -80,6 +80,26 @@ start_docker() {
   ok "Docker daemon is running."
 }
 
+# On low-RAM servers the Nest/TS build can OOM. Add swap so it always completes.
+ensure_swap() {
+  local mem_kb swap_kb
+  mem_kb=$(awk '/MemTotal/{print $2}' /proc/meminfo 2>/dev/null || echo 0)
+  swap_kb=$(awk '/SwapTotal/{print $2}' /proc/meminfo 2>/dev/null || echo 0)
+  if [ "${mem_kb:-0}" -lt 3000000 ] && [ "${swap_kb:-0}" -lt 2000000 ]; then
+    if [ ! -f /swapfile ]; then
+      log "Low memory detected — creating a 4G swapfile so the build won't OOM…"
+      fallocate -l 4G /swapfile 2>/dev/null || dd if=/dev/zero of=/swapfile bs=1M count=4096 status=none
+      chmod 600 /swapfile
+      mkswap /swapfile >/dev/null 2>&1
+      swapon /swapfile 2>/dev/null || true
+      grep -q '/swapfile' /etc/fstab 2>/dev/null || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+      ok "Swap enabled (4G)."
+    else
+      swapon /swapfile 2>/dev/null || true
+    fi
+  fi
+}
+
 clone_repo() {
   if [ -d "$GS_DIR/.git" ]; then
     log "Updating existing install at ${GS_DIR}…"
@@ -105,6 +125,7 @@ main() {
   cleanup_conflicts
   ensure_docker
   start_docker
+  ensure_swap
   command -v git >/dev/null 2>&1 || { log "Installing git…"; apt-get update -y >/dev/null && apt-get install -y git >/dev/null; }
   clone_repo
   launch
