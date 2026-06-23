@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActionIcon,
   Box,
@@ -31,7 +31,7 @@ import { ParticleField } from '@shared/ui/ParticleField';
 import { useSession } from '@entities/session/session.store';
 import i18n, { SUPPORTED_LANGUAGES } from '@shared/i18n/i18n';
 import { APP } from '@shared/config';
-import { login as apiLogin, register as apiRegister } from '@shared/api/auth';
+import { getAuthStatus, login as apiLogin, register as apiRegister, type AuthStatus } from '@shared/api/auth';
 
 const features = [
   { icon: IconServerBolt, key: 'nav.nodes', accent: '#22d3ee' },
@@ -50,6 +50,24 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<AuthStatus | null>(null);
+
+  // Ask the engine what's allowed: once an admin exists, registration closes.
+  useEffect(() => {
+    getAuthStatus()
+      .then(setStatus)
+      .catch(() => setStatus(null));
+  }, []);
+
+  const canRegister = status?.isRegisterAllowed !== false;
+  const canLogin = status?.isLoginAllowed !== false;
+
+  useEffect(() => {
+    if (!status) return;
+    if (!status.isRegisterAllowed && tab === 'register') setTab('login');
+    if (status.isRegisterAllowed && status.isLoginAllowed === false) setTab('register');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
 
   const canSubmit = username.trim().length >= 2 && password.length >= 4;
 
@@ -202,19 +220,21 @@ export default function LoginPage() {
               </Text>
             </Stack>
 
-            <SegmentedControl
-              fullWidth
-              value={tab}
-              onChange={(v) => {
-                setTab(v as 'login' | 'register');
-                setError(null);
-              }}
-              data={[
-                { value: 'login', label: t('auth.loginTab') },
-                { value: 'register', label: t('auth.registerTab') },
-              ]}
-              mb="md"
-            />
+            {canLogin && canRegister && (
+              <SegmentedControl
+                fullWidth
+                value={tab}
+                onChange={(v) => {
+                  setTab(v as 'login' | 'register');
+                  setError(null);
+                }}
+                data={[
+                  { value: 'login', label: t('auth.loginTab') },
+                  { value: 'register', label: t('auth.registerTab') },
+                ]}
+                mb="md"
+              />
+            )}
 
             <Stack gap="md">
               <TextInput
