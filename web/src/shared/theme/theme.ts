@@ -7,13 +7,14 @@ import {
 import { ember, ghost, ink, plasma, spectre, toxic } from './colors';
 
 const fontStack =
-  "'Inter', 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif";
-const displayStack = "'Space Grotesk', 'Inter', system-ui, sans-serif";
+  "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif";
+// Ghost OS uses Inter for headings too (tight negative tracking, applied in global.css).
+const displayStack = "'Inter', system-ui, -apple-system, sans-serif";
 const monoStack = "'JetBrains Mono', 'Fira Code', 'SFMono-Regular', ui-monospace, monospace";
 
 export const theme: MantineThemeOverride = createTheme({
   primaryColor: 'ghost',
-  primaryShade: { light: 6, dark: 5 },
+  primaryShade: { light: 6, dark: 3 },
   autoContrast: true,
   luminanceThreshold: 0.45,
   colors: {
@@ -61,8 +62,8 @@ export const theme: MantineThemeOverride = createTheme({
   cursorType: 'pointer',
   focusRing: 'never',
   other: {
-    glow: '0 0 0 1px rgba(124,92,255,0.35), 0 0 28px rgba(124,92,255,0.25)',
-    glowSpectre: '0 0 0 1px rgba(34,211,238,0.35), 0 0 26px rgba(34,211,238,0.2)',
+    glow: '0 0 0 1px rgba(200,205,216,0.18), 0 18px 50px rgba(200,205,216,0.10)',
+    glowSpectre: '0 0 0 1px rgba(148,163,184,0.18), 0 18px 50px rgba(148,163,184,0.10)',
   },
   components: {
     Paper: {
@@ -109,18 +110,19 @@ export const theme: MantineThemeOverride = createTheme({
 
 export const cssVariablesResolver: CSSVariablesResolver = () => ({
   variables: {
-    '--gs-bg': '#07070b',
-    '--gs-bg-deep': '#050509',
-    '--gs-surface': '#0f1017',
-    '--gs-surface-alt': '#13141d',
-    '--gs-elevated': '#191a24',
-    '--gs-border': 'rgba(255,255,255,0.07)',
+    '--gs-bg': '#0A0C10',
+    '--gs-bg-deep': '#07090d',
+    '--gs-surface': '#141824',
+    '--gs-surface-alt': '#1A1F2E',
+    '--gs-elevated': '#1A1F2E',
+    '--gs-border': 'rgba(255,255,255,0.06)',
     '--gs-border-strong': 'rgba(255,255,255,0.12)',
-    '--gs-ghost': '#7c5cff',
-    '--gs-spectre': '#22d3ee',
-    '--gs-plasma': '#f129b3',
-    '--gs-toxic': '#22ff7c',
-    '--gs-ember': '#ffa121',
+    '--gs-ghost': '#C8CDD8',
+    '--gs-spectre': '#94A3B8',
+    '--gs-plasma': '#a78bfa',
+    '--gs-toxic': '#2EE5A3',
+    '--gs-ember': '#fbbf24',
+    '--gs-text-dim': '#94A3B8',
     '--gs-font-display': displayStack,
     '--gs-font-mono': monoStack,
   },
@@ -128,7 +130,7 @@ export const cssVariablesResolver: CSSVariablesResolver = () => ({
     '--gs-text': '#1b1c24',
   },
   dark: {
-    '--gs-text': '#c7c8d6',
-    '--mantine-color-body': '#07070b',
+    '--gs-text': '#E2E8F0',
+    '--mantine-color-body': '#0A0C10',
   },
 });

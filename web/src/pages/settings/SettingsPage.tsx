@@ -36,11 +36,11 @@ import i18n, { SUPPORTED_LANGUAGES } from '@shared/i18n/i18n';
 import { APP } from '@shared/config';
 
 const ACCENTS: { value: AccentColor; color: string }[] = [
-  { value: 'ghost', color: '#7c5cff' },
-  { value: 'spectre', color: '#22d3ee' },
-  { value: 'plasma', color: '#f129b3' },
-  { value: 'toxic', color: '#22ff7c' },
-  { value: 'ember', color: '#ffa121' },
+  { value: 'ghost', color: '#C8CDD8' },
+  { value: 'spectre', color: '#94A3B8' },
+  { value: 'plasma', color: '#a78bfa' },
+  { value: 'toxic', color: '#2EE5A3' },
+  { value: 'ember', color: '#fbbf24' },
 ];
 
 export default function SettingsPage() {

@@ -15,13 +15,7 @@ export function AppLayout() {
       padding={0}
       style={{ background: 'transparent' }}
     >
-      <AppShell.Header
-        style={{
-          background: 'rgba(10,10,15,0.55)',
-          backdropFilter: 'blur(18px)',
-          borderBottom: '1px solid var(--gs-border)',
-        }}
-      >
+      <AppShell.Header style={{ background: 'transparent', border: 'none' }}>
         <Topbar navOpened={navOpened} onToggleNav={toggleNav} />
       </AppShell.Header>
 

@@ -37,7 +37,19 @@ export function Topbar({ navOpened, onToggleNav }: TopbarProps) {
   const connection = useSession((s) => s.connection);
 
   return (
-    <Group h="100%" px="md" justify="space-between" wrap="nowrap">
+    <Box px={{ base: 'sm', md: 'md' }} py={8} h="100%">
+      <Box
+        className="gs-glass"
+        style={{
+          height: '100%',
+          borderRadius: 16,
+          padding: '0 12px',
+          display: 'flex',
+          alignItems: 'center',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.4)',
+        }}
+      >
+        <Group h="100%" w="100%" justify="space-between" wrap="nowrap">
       <Group gap="sm" wrap="nowrap">
         <Burger opened={navOpened} onClick={onToggleNav} hiddenFrom="md" size="sm" />
         <UnstyledButton
@@ -149,6 +161,8 @@ export function Topbar({ navOpened, onToggleNav }: TopbarProps) {
           </Menu.Dropdown>
         </Menu>
       </Group>
-    </Group>
+        </Group>
+      </Box>
+    </Box>
   );
 }

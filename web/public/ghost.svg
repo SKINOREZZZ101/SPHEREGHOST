@@ -1,18 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <defs>
     <linearGradient id="gsg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#a288f1"/>
-      <stop offset="0.5" stop-color="#7c5cff"/>
-      <stop offset="1" stop-color="#22d3ee"/>
+      <stop stop-color="#ffffff"/>
+      <stop offset="0.5" stop-color="#C8CDD8"/>
+      <stop offset="1" stop-color="#94A3B8"/>
     </linearGradient>
     <radialGradient id="gsr" cx="0.5" cy="0.4" r="0.6">
-      <stop stop-color="#0f1017"/>
-      <stop offset="1" stop-color="#07070b"/>
+      <stop stop-color="#141824"/>
+      <stop offset="1" stop-color="#0A0C10"/>
     </radialGradient>
   </defs>
   <circle cx="32" cy="32" r="29" fill="url(#gsr)" stroke="url(#gsg)" stroke-width="2.5"/>
   <ellipse cx="32" cy="32" rx="29" ry="11" fill="none" stroke="url(#gsg)" stroke-width="1.4" opacity="0.4"/>
   <path d="M32 16c-7.2 0-13 5.8-13 13v17c0 1.4 1.6 2.2 2.7 1.3l2.6-2.1a2 2 0 0 1 2.6 0l2.2 1.9a2 2 0 0 0 2.6 0l2.2-1.9a2 2 0 0 1 2.6 0l2.6 2.1c1.1.9 2.7.1 2.7-1.3V29c0-7.2-5.8-13-13-13z" fill="url(#gsg)"/>
-  <circle cx="27" cy="29" r="2.4" fill="#07070b"/>
-  <circle cx="37" cy="29" r="2.4" fill="#07070b"/>
+  <circle cx="27" cy="29" r="2.4" fill="#0A0C10"/>
+  <circle cx="37" cy="29" r="2.4" fill="#0A0C10"/>
 </svg>

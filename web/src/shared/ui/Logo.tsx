@@ -15,19 +15,19 @@ export function GhostSphereMark({ size = 36, animated = true }: { size?: number;
         height: size,
         display: 'grid',
         placeItems: 'center',
-        filter: 'drop-shadow(0 0 10px rgba(124,92,255,0.45))',
+        filter: 'drop-shadow(0 0 10px rgba(200,205,216,0.35))',
       }}
     >
       <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
         <defs>
           <linearGradient id="gs-mark" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#a288f1" />
-            <stop offset="0.5" stopColor="#7c5cff" />
-            <stop offset="1" stopColor="#22d3ee" />
+            <stop stopColor="#ffffff" />
+            <stop offset="0.5" stopColor="#C8CDD8" />
+            <stop offset="1" stopColor="#94A3B8" />
           </linearGradient>
           <radialGradient id="gs-core" cx="0.5" cy="0.4" r="0.6">
-            <stop stopColor="#14141d" />
-            <stop offset="1" stopColor="#07070b" />
+            <stop stopColor="#141824" />
+            <stop offset="1" stopColor="#0A0C10" />
           </radialGradient>
         </defs>
         <circle cx="32" cy="32" r="29" fill="url(#gs-core)" stroke="url(#gs-mark)" strokeWidth="2.5" />
@@ -50,8 +50,8 @@ export function GhostSphereMark({ size = 36, animated = true }: { size?: number;
           d="M32 16c-7.2 0-13 5.8-13 13v17c0 1.4 1.6 2.2 2.7 1.3l2.6-2.1a2 2 0 0 1 2.6 0l2.2 1.9a2 2 0 0 0 2.6 0l2.2-1.9a2 2 0 0 1 2.6 0l2.6 2.1c1.1.9 2.7.1 2.7-1.3V29c0-7.2-5.8-13-13-13z"
           fill="url(#gs-mark)"
         />
-        <circle cx="27" cy="29" r="2.4" fill="#07070b" />
-        <circle cx="37" cy="29" r="2.4" fill="#07070b" />
+        <circle cx="27" cy="29" r="2.4" fill="#0A0C10" />
+        <circle cx="37" cy="29" r="2.4" fill="#0A0C10" />
       </svg>
     </Box>
   );

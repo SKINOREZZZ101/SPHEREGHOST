@@ -18,13 +18,13 @@ function ThemeSync() {
   }, [grain]);
   useEffect(() => {
     const map: Record<string, string> = {
-      ghost: '#7c5cff',
-      spectre: '#22d3ee',
-      plasma: '#f129b3',
-      toxic: '#22ff7c',
-      ember: '#ffa121',
+      ghost: '#C8CDD8',
+      spectre: '#94A3B8',
+      plasma: '#a78bfa',
+      toxic: '#2EE5A3',
+      ember: '#fbbf24',
     };
-    document.documentElement.style.setProperty('--gs-accent', map[accent] ?? '#7c5cff');
+    document.documentElement.style.setProperty('--gs-accent', map[accent] ?? '#C8CDD8');
   }, [accent]);
   return null;
 }

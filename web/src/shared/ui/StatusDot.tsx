@@ -1,22 +1,22 @@
 import { Box, Group, Text } from '@mantine/core';
 
 const COLORS: Record<string, string> = {
-  connected: '#22ff7c',
-  online: '#22ff7c',
-  operational: '#22ff7c',
-  healthy: '#22ff7c',
-  success: '#22ff7c',
-  connecting: '#ffa121',
-  degraded: '#ffa121',
-  pending: '#ffa121',
-  warning: '#ffa121',
-  disconnected: '#ff4d6d',
-  down: '#ff4d6d',
-  error: '#ff4d6d',
-  unhealthy: '#ff4d6d',
-  disabled: '#6e7186',
-  offline: '#6e7186',
-  inactive: '#6e7186',
+  connected: '#2EE5A3',
+  online: '#2EE5A3',
+  operational: '#2EE5A3',
+  healthy: '#2EE5A3',
+  success: '#2EE5A3',
+  connecting: '#fbbf24',
+  degraded: '#fbbf24',
+  pending: '#fbbf24',
+  warning: '#fbbf24',
+  disconnected: '#f87171',
+  down: '#f87171',
+  error: '#f87171',
+  unhealthy: '#f87171',
+  disabled: '#64748B',
+  offline: '#64748B',
+  inactive: '#64748B',
 };
 
 interface StatusDotProps {

@@ -27,6 +27,7 @@ import {
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { GhostSphereMark, Logo } from '@shared/ui/Logo';
+import { ParticleField } from '@shared/ui/ParticleField';
 import { useSession } from '@entities/session/session.store';
 import i18n, { SUPPORTED_LANGUAGES } from '@shared/i18n/i18n';
 import { APP } from '@shared/config';
@@ -70,7 +71,8 @@ export default function LoginPage() {
   };
 
   return (
-    <Box style={{ minHeight: '100vh', display: 'flex', position: 'relative' }}>
+    <Box style={{ minHeight: '100vh', display: 'flex', position: 'relative', overflow: 'hidden' }}>
+      <ParticleField />
       <Box style={{ position: 'absolute', top: 20, right: 20, zIndex: 5 }}>
         <Menu shadow="lg" width={160} position="bottom-end" radius="md">
           <Menu.Target>
@@ -102,6 +104,7 @@ export default function LoginPage() {
           flexDirection: 'column',
           justifyContent: 'space-between',
           position: 'relative',
+          zIndex: 1,
           overflow: 'hidden',
           borderRight: '1px solid var(--gs-border)',
         }}
@@ -180,7 +183,7 @@ export default function LoginPage() {
       </Box>
 
       {/* Right: login / register */}
-      <Box style={{ flex: 1, display: 'grid', placeItems: 'center', padding: 24 }}>
+      <Box style={{ flex: 1, display: 'grid', placeItems: 'center', padding: 24, position: 'relative', zIndex: 1 }}>
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
