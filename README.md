@@ -40,7 +40,17 @@
 
 ## 🚀 Быстрый старт
 
-### Вариант 1 — Docker (рекомендуется)
+### Вариант 0 — установка на сервер одной командой (Ubuntu/Debian, рекомендуется)
+
+Ставит чистый Docker CE + Compose v2, клонирует репозиторий в `/opt/ghost-sphere` и поднимает весь стек:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SKINOREZZZ101/SPHEREGHOST/main/scripts/install.sh | sudo bash
+```
+
+Через 3–6 минут откройте `http://<IP-сервера>:8080` → вкладка **«Регистрация»**. Откройте порт `8080/tcp` в фаерволе.
+
+### Вариант 1 — Docker вручную
 
 ```bash
 cd SPHERE-GHOST
