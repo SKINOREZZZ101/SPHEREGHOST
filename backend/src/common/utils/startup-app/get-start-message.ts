@@ -34,7 +34,7 @@ export async function getStartMessage() {
         ],
         {
             columnDefault: {
-                width: 64,
+                width: 84,
             },
             columns: {
                 0: { alignment: 'center' },

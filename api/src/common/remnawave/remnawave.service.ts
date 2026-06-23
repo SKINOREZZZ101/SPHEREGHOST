@@ -16,6 +16,11 @@ export class RemnawaveService {
       Authorization: `Bearer ${creds.token}`,
       'X-Remnawave-Client-Type': 'browser',
       'Content-Type': 'application/json',
+      // The engine's ProxyCheckMiddleware requires a reverse-proxy + HTTPS:
+      // it needs X-Forwarded-For present AND X-Forwarded-Proto === 'https'.
+      // The BFF is the trusted internal proxy in front of the engine.
+      'X-Forwarded-Proto': 'https',
+      'X-Forwarded-For': '127.0.0.1',
     };
     if (creds.caddyToken) headers['X-Api-Key'] = creds.caddyToken;
     return axios.create({
